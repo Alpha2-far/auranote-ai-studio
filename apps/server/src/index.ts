@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs';
 import { listCaptures, ackCaptures } from './store';
 import { ingestCapture } from './ingest';
 import { handleMcpRequest } from './mcp';
+import { createToken, listTokens, revokeToken, validateToken, activeTokenCount } from './tokens';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
@@ -17,11 +18,20 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 
-/** Auth Bearer optionnelle (activée seulement si API_SECRET est défini). */
-function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!API_SECRET) return next();
+/**
+ * Auth Bearer. Ouverte tant qu'aucun secret n'est configuré NI aucun token créé.
+ * Dès qu'un API_SECRET (env) ou un token in-app existe, un Bearer valide est exigé.
+ */
+async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.get('authorization') ?? '';
-  if (header === `Bearer ${API_SECRET}`) return next();
+  const bearer = header.startsWith('Bearer ') ? header.slice(7) : '';
+
+  const hasTokens = (await activeTokenCount()) > 0;
+  if (!API_SECRET && !hasTokens) return next(); // aucune auth configurée → ouvert
+
+  if (API_SECRET && bearer === API_SECRET) return next();
+  if (bearer && (await validateToken(bearer))) return next();
+
   res.status(401).json({ error: "Jeton d'authentification invalide." });
 }
 
@@ -32,9 +42,32 @@ app.get('/api/health', (_req, res) =>
 );
 
 // Infos publiques pour l'écran « Connecteur » côté web (ne divulgue PAS le secret).
-app.get('/api/config', (_req, res) =>
-  res.json({ mcpPath: '/mcp', ingestPath: '/api/v1/notes/ingest', authRequired: Boolean(API_SECRET) }),
-);
+app.get('/api/config', async (_req, res) => {
+  const tokens = await activeTokenCount();
+  res.json({
+    mcpPath: '/mcp',
+    ingestPath: '/api/v1/notes/ingest',
+    envSecret: Boolean(API_SECRET),
+    tokenCount: tokens,
+    authRequired: Boolean(API_SECRET) || tokens > 0,
+  });
+});
+
+// Gestion des tokens de connecteur (générés depuis l'app — pas de config Railway).
+app.get('/api/v1/tokens', async (_req, res) => res.json({ tokens: await listTokens() }));
+app.post('/api/v1/tokens', async (req, res) => {
+  const { label, expiresInDays } = req.body ?? {};
+  const token = await createToken(
+    typeof label === 'string' ? label : 'Connecteur',
+    typeof expiresInDays === 'number' ? expiresInDays : undefined,
+  );
+  // Le token complet n'est renvoyé qu'ici, à la création.
+  res.status(201).json({ id: token.id, token: token.token, label: token.label, expiresAt: token.expiresAt });
+});
+app.delete('/api/v1/tokens/:id', async (req, res) => {
+  const ok = await revokeToken(req.params.id);
+  res.json({ revoked: ok });
+});
 
 // Ingestion d'une capture (extension, script, ordre IA)
 app.post('/api/v1/notes/ingest', requireAuth, async (req, res) => {

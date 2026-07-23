@@ -1,10 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { useUI } from '../store/useUI';
-import { IconSun, IconMoon } from '../components/icons';
+import { IconSun, IconMoon, IconTrash } from '../components/icons';
 
 const apiOrigin = import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin;
+
+interface TokenPublic {
+  id: string;
+  label: string;
+  createdAt: string;
+  expiresAt: string | null;
+  preview: string;
+  expired: boolean;
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -26,14 +35,46 @@ export function SettingsPage() {
   const { theme, setTheme } = useUI();
   const noteCount = useLiveQuery(() => db.notes.count(), [], 0);
   const tagCount = useLiveQuery(() => db.tags.count(), [], 0);
-  const [authRequired, setAuthRequired] = useState<boolean | null>(null);
+  const [serverUp, setServerUp] = useState<boolean | null>(null);
+  const [tokens, setTokens] = useState<TokenPublic[]>([]);
+  const [label, setLabel] = useState('Claude');
+  const [expiry, setExpiry] = useState('7');
+  const [newToken, setNewToken] = useState<string | null>(null);
+
+  const refreshTokens = useCallback(async () => {
+    try {
+      const [cfg, list] = await Promise.all([
+        fetch(`${apiOrigin}/api/config`).then((r) => r.json()),
+        fetch(`${apiOrigin}/api/v1/tokens`).then((r) => r.json()),
+      ]);
+      setServerUp(true);
+      void cfg;
+      setTokens(list.tokens ?? []);
+    } catch {
+      setServerUp(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetch(`${apiOrigin}/api/config`)
-      .then((r) => r.json())
-      .then((c) => setAuthRequired(Boolean(c.authRequired)))
-      .catch(() => setAuthRequired(null));
-  }, []);
+    void refreshTokens();
+  }, [refreshTokens]);
+
+  const generateToken = async () => {
+    const days = expiry === 'never' ? undefined : Number(expiry);
+    const res = await fetch(`${apiOrigin}/api/v1/tokens`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label, expiresInDays: days }),
+    });
+    const data = await res.json();
+    setNewToken(data.token);
+    await refreshTokens();
+  };
+
+  const revoke = async (id: string) => {
+    await fetch(`${apiOrigin}/api/v1/tokens/${id}`, { method: 'DELETE' });
+    await refreshTokens();
+  };
 
   const mcpUrl = `${apiOrigin}/mcp`;
   const desktopConfig = JSON.stringify(
@@ -105,21 +146,89 @@ export function SettingsPage() {
           <CopyButton text={mcpUrl} />
         </div>
 
-        <div className="mb-3 rounded-lg bg-black/5 p-3 text-sm dark:bg-white/5">
-          <div className="mb-1 font-semibold">Token d'accès</div>
-          {authRequired === null ? (
-            <p className="text-[var(--text-soft)]">Serveur injoignable — impossible de vérifier l'authentification.</p>
-          ) : authRequired ? (
-            <p className="text-[var(--text-soft)]">
-              🔒 Authentification <b>activée</b>. Le token est la variable <code>API_SECRET</code> que tu as
-              définie sur Railway (Variables). Fournis-le au connecteur via l'en-tête{' '}
-              <code>Authorization: Bearer &lt;API_SECRET&gt;</code>. Pour ta sécurité, il n'est jamais affiché ici.
-            </p>
+        <div className="mb-3 rounded-lg border border-[var(--border)] p-3">
+          <div className="mb-2 font-semibold">Tokens d'accès</div>
+          {serverUp === false ? (
+            <p className="text-sm text-[var(--text-soft)]">Serveur injoignable.</p>
           ) : (
-            <p className="text-[var(--text-soft)]">
-              ⚠️ Aucune authentification. N'importe qui connaissant l'URL peut écrire. Sur Railway, définis une
-              variable <code>API_SECRET</code> pour exiger un token.
-            </p>
+            <>
+              <p className="mb-3 text-sm text-[var(--text-soft)]">
+                Génère un token à coller dans le connecteur. Tant qu'aucun token n'existe, l'ingestion est
+                ouverte ; dès qu'un token existe, il devient obligatoire.
+              </p>
+
+              {newToken && (
+                <div className="mb-3 rounded-lg border border-brand-500/40 bg-brand-500/10 p-3">
+                  <div className="mb-1 text-sm font-semibold">
+                    ✓ Nouveau token — copie-le maintenant (non réaffiché ensuite)
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap rounded bg-black/10 px-2 py-1 text-xs dark:bg-white/10">
+                      {newToken}
+                    </code>
+                    <CopyButton text={newToken} />
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-3 flex flex-wrap items-end gap-2">
+                <div className="flex-1">
+                  <label className="mb-1 block text-xs text-[var(--text-soft)]">Nom</label>
+                  <input
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-sm outline-none focus:border-brand-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-[var(--text-soft)]">Expiration</label>
+                  <select
+                    value={expiry}
+                    onChange={(e) => setExpiry(e.target.value)}
+                    className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-sm outline-none focus:border-brand-500"
+                  >
+                    <option value="1">1 jour</option>
+                    <option value="7">7 jours</option>
+                    <option value="30">30 jours</option>
+                    <option value="never">Jamais</option>
+                  </select>
+                </div>
+                <button
+                  onClick={generateToken}
+                  className="rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-semibold text-[#0D0F12] hover:bg-brand-600"
+                >
+                  Générer
+                </button>
+              </div>
+
+              {tokens.length > 0 && (
+                <ul className="flex flex-col gap-1">
+                  {tokens.map((t) => (
+                    <li
+                      key={t.id}
+                      className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-sm"
+                    >
+                      <span className="font-medium">{t.label}</span>
+                      <code className="text-xs text-[var(--text-soft)]">{t.preview}</code>
+                      <span className="text-xs text-[var(--text-soft)]">
+                        {t.expired
+                          ? '· expiré'
+                          : t.expiresAt
+                            ? `· exp. ${new Date(t.expiresAt).toLocaleDateString('fr-FR')}`
+                            : '· sans expiration'}
+                      </span>
+                      <button
+                        onClick={() => revoke(t.id)}
+                        className="ml-auto rounded-lg p-1 text-[var(--text-soft)] hover:bg-red-500/10 hover:text-red-500"
+                        title="Révoquer"
+                      >
+                        <IconTrash size={15} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </div>
 
