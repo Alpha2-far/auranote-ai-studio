@@ -6,7 +6,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { ShareTargetHandler } from './pages/ShareTargetHandler';
 import { CommandPalette } from './components/CommandPalette';
 import { SmartPasteDialog } from './components/SmartPasteDialog';
-import { usePendingImport } from './lib/api';
+import { useSync } from './lib/sync';
 
 // Chargement différé : l'éditeur (TipTap) et le canvas (React Flow) sont lourds.
 const NoteEditorPage = lazy(() =>
@@ -20,7 +20,7 @@ const CanvasPage = lazy(() => import('./pages/CanvasPage').then((m) => ({ defaul
 const Loading = () => <div className="p-6 text-[var(--text-soft)]">Chargement…</div>;
 
 export function App() {
-  usePendingImport();
+  useSync();
   return (
     <>
       <Suspense fallback={<Loading />}>

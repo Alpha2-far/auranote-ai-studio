@@ -10,15 +10,24 @@ function buildMcpServer(): McpServer {
 
   server.tool(
     'save_note',
-    "Enregistre une note, une idée, une décision ou une synthèse dans le carnet AuraNote de l'utilisateur (son « second cerveau »). Utilise cet outil quand l'utilisateur demande de sauvegarder, mémoriser, archiver ou « mettre dans le carnet ».",
+    [
+      "Enregistre une note dans le carnet AuraNote de l'utilisateur (son « second cerveau »).",
+      "Utilise-le quand l'utilisateur demande de sauvegarder, mémoriser, archiver ou « mettre dans le carnet ».",
+      'RÉDIGE `content` en Markdown bien structuré :',
+      '- titres de section : `## Titre`',
+      '- listes à puces : `- item`',
+      '- cases à cocher : `- [ ] tâche`',
+      '- citations : `> …`  ·  gras : `**…**`  ·  code : bloc ``` ```',
+      'Donne un `title` clair et 2 à 5 `tags` courts (ex. Stratégie, Technique, Idées).',
+    ].join('\n'),
     {
-      content: z.string().describe('Le contenu de la note (texte ou Markdown), nettoyé et structuré automatiquement.'),
-      title: z.string().optional().describe('Titre optionnel ; extrait du contenu si absent.'),
-      tags: z.array(z.string()).optional().describe('Étiquettes optionnelles.'),
+      content: z.string().describe('Contenu de la note en Markdown structuré (titres, listes, cases à cocher, citations, code).'),
+      title: z.string().optional().describe('Titre clair de la note ; extrait du contenu si absent.'),
+      tags: z.array(z.string()).optional().describe('2 à 5 étiquettes courtes. Créées/assignées automatiquement.'),
     },
     async ({ content, title, tags }) => {
       try {
-        const { id, title: saved } = await ingestCapture({ content, title, tags, source: 'Claude (MCP)' });
+        const { id, title: saved } = await ingestCapture({ content, title, tags, source: 'MCP' });
         return {
           content: [
             { type: 'text', text: `✓ Note enregistrée dans AuraNote : « ${saved} » (id ${id}).` },

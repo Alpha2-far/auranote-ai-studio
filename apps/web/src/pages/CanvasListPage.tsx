@@ -7,7 +7,11 @@ import { ConfirmDialog } from '../components/Modal';
 
 export function CanvasListPage() {
   const navigate = useNavigate();
-  const canvases = useLiveQuery(() => db.canvases.orderBy('updatedAt').reverse().toArray(), [], []);
+  const canvases = useLiveQuery(
+    () => db.canvases.orderBy('updatedAt').reverse().filter((c) => !c.deletedAt).toArray(),
+    [],
+    [],
+  );
   const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const create = async () => {

@@ -24,7 +24,7 @@ function TagDot({ color }: { color: string }) {
 
 export function Layout() {
   const navigate = useNavigate();
-  const tags = useLiveQuery(() => db.tags.toArray(), [], []);
+  const tags = useLiveQuery(() => db.tags.filter((t) => !t.deletedAt).toArray(), [], []);
   const {
     activeTagId,
     setActiveTag,

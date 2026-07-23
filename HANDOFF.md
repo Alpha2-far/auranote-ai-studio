@@ -31,7 +31,7 @@ racine (package.json: workspaces = packages/*, apps/*)
 Responsabilités :
 - **core** : `parseRawText`, `segmentTextIntoSections`, `cleanAiUiNoise`, `sanitizeHTML`, types `Note/Tag/Canvas`. Utilisé par le web ET le serveur → une seule implémentation.
 - **web** : toute l'UI + stockage IndexedDB (Dexie). Consomme `@auranote/core` en source (alias Vite).
-- **server** : `/health`, `/api/config`, `/api/v1/notes/ingest|pending|ack`, `/api/v1/tokens`, `/mcp`, et sert `apps/web/dist`.
+- **server** : `/health`, `/api/config`, `/api/v1/notes/ingest`, `/api/v1/sync/push`, `/api/v1/sync/pull`, `/api/v1/tokens`, `/mcp`, et sert `apps/web/dist`.
 - **mcp** : pont stdio pour Claude Desktop (le remote HTTP est dans `apps/server` sur `/mcp`).
 - **extension** : capture la dernière réponse IA → `POST /api/v1/notes/ingest`.
 
@@ -54,18 +54,19 @@ Responsabilités :
 - `canvases` : `{ id, name, nodes[], edges[], … }`
 - `settings` : préférences
 
-**Serveur (fichiers dans `DATA_DIR`, défaut `apps/server/data/`)** :
-- `captures.json` : captures en attente (ingest → pending → ack)
-- `tokens.json` : tokens du connecteur (générés dans Réglages)
-> ⚠️ Disque **éphémère** sur Railway : réinitialisé à chaque déploiement (voir §7 et §10).
+**Serveur (fichiers dans `DATA_DIR`, ex. `/data` sur volume Railway)** :
+- `store.json` : hub de synchronisation — `notes`, `tags`, `canvases` (chacun avec `updatedAt` + `deletedAt?`)
+- `tokens.json` : tokens / clés de synchro (générés dans Réglages)
+> Persistant si `DATA_DIR` pointe sur le **volume Railway** (sinon éphémère, cf. §10).
 
 ---
 
 ## 5. Flux clés
 
 - **Smart Paste** : texte collé → `parseRawText` (core) → note structurée en IndexedDB.
-- **Connecteur / ingestion** : Claude (MCP) ou extension → `POST /api/v1/notes/ingest` → `captures.json`. Le web appelle `GET /pending` toutes les 30 s, crée les notes, puis `POST /ack`.
-- **Auth** : ouverte tant qu'aucun `API_SECRET` (env) ni token in-app n'existe ; sinon Bearer obligatoire. Tokens gérés dans **Réglages → Connecteur (MCP)**.
+- **Connecteur / ingestion** : IA (MCP) ou extension → `POST /api/v1/notes/ingest` → crée directement une note dans `store.json` (résout les tags en vrais tags colorés). Les appareils la récupèrent au prochain `sync/pull`.
+- **Sync multi-appareils** : chaque appareil `POST /api/v1/sync/push` (ses entités modifiées) puis `GET /api/v1/sync/pull?since=` (LWW sur `updatedAt`, tombstones `deletedAt`). Moteur : [apps/web/src/lib/sync.ts](apps/web/src/lib/sync.ts), déclenché au démarrage/focus/20 s/après mutation.
+- **Auth / clé de synchro** : ouverte tant qu'aucun `API_SECRET` ni token n'existe ; sinon Bearer obligatoire. La **clé de synchro = un token** ; gérée dans **Réglages → Synchronisation** (générer/coller) et **Connecteur (MCP)**.
 
 ---
 

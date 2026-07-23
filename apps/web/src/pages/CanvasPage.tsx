@@ -48,7 +48,7 @@ export function CanvasPage() {
   useEffect(() => {
     if (!id) return;
     void db.canvases.get(id).then((c) => {
-      if (!c) {
+      if (!c || c.deletedAt) {
         navigate('/canvas', { replace: true });
         return;
       }
@@ -112,7 +112,7 @@ export function CanvasPage() {
   };
 
   const openPicker = async () => {
-    const all = await db.notes.orderBy('updatedAt').reverse().limit(50).toArray();
+    const all = await db.notes.orderBy('updatedAt').reverse().filter((n) => !n.deletedAt).limit(50).toArray();
     setPickerNotes(all);
     setPickerOpen(true);
   };

@@ -12,7 +12,7 @@ export function TagPicker({
   selected: string[];
   onChange: (ids: string[]) => void;
 }) {
-  const tags = useLiveQuery(() => db.tags.toArray(), [], []);
+  const tags = useLiveQuery(() => db.tags.filter((t) => !t.deletedAt).toArray(), [], []);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
 

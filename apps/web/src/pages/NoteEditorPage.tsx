@@ -11,7 +11,14 @@ import { extractTitle } from '@auranote/core';
 export function NoteEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const note = useLiveQuery(() => (id ? db.notes.get(id) : undefined), [id]);
+  const note = useLiveQuery(
+    async () => {
+      if (!id) return undefined;
+      const n = await db.notes.get(id);
+      return n && !n.deletedAt ? n : null;
+    },
+    [id],
+  );
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   const [confirmOpen, setConfirmOpen] = useState(false);
 

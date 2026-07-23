@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { useUI } from '../store/useUI';
 import { IconSun, IconMoon, IconTrash } from '../components/icons';
+import { getSyncKey, setSyncKey, syncNow, resetSyncWatermark, useSyncStatus } from '../lib/sync';
 
 const apiOrigin = import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin;
 
@@ -33,13 +34,50 @@ function CopyButton({ text }: { text: string }) {
 
 export function SettingsPage() {
   const { theme, setTheme } = useUI();
-  const noteCount = useLiveQuery(() => db.notes.count(), [], 0);
-  const tagCount = useLiveQuery(() => db.tags.count(), [], 0);
+  const noteCount = useLiveQuery(() => db.notes.filter((n) => !n.deletedAt).count(), [], 0);
+  const tagCount = useLiveQuery(() => db.tags.filter((t) => !t.deletedAt).count(), [], 0);
   const [serverUp, setServerUp] = useState<boolean | null>(null);
   const [tokens, setTokens] = useState<TokenPublic[]>([]);
   const [label, setLabel] = useState('Claude');
   const [expiry, setExpiry] = useState('7');
   const [newToken, setNewToken] = useState<string | null>(null);
+
+  // --- Synchronisation ---
+  const syncStatus = useSyncStatus();
+  const [hasKey, setHasKey] = useState(Boolean(getSyncKey()));
+  const [pasteKey, setPasteKey] = useState('');
+  const [genKey, setGenKey] = useState<string | null>(null);
+
+  const generateSyncKey = async () => {
+    const res = await fetch(`${apiOrigin}/api/v1/tokens`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: 'Clé de synchro' }),
+    });
+    const data = await res.json();
+    setSyncKey(data.token);
+    resetSyncWatermark();
+    setGenKey(data.token);
+    setHasKey(true);
+    await syncNow();
+    await refreshTokens();
+  };
+
+  const connectWithKey = async () => {
+    if (!pasteKey.trim()) return;
+    setSyncKey(pasteKey);
+    resetSyncWatermark();
+    setPasteKey('');
+    setHasKey(true);
+    await syncNow();
+  };
+
+  const disconnectSync = () => {
+    setSyncKey('');
+    resetSyncWatermark();
+    setGenKey(null);
+    setHasKey(false);
+  };
 
   const refreshTokens = useCallback(async () => {
     try {
@@ -124,6 +162,89 @@ export function SettingsPage() {
             <IconMoon size={16} /> Sombre
           </button>
         </div>
+      </section>
+
+      {/* Synchronisation multi-appareils */}
+      <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <h2 className="mb-1 font-semibold">Synchronisation multi-appareils</h2>
+        <p className="mb-3 text-sm text-[var(--text-soft)]">
+          Retrouve tes notes, tags et canvas sur tous tes appareils. Génère une clé ici, puis colle-la
+          sur ton autre appareil.
+        </p>
+
+        {!hasKey ? (
+          <>
+            <button
+              onClick={generateSyncKey}
+              className="mb-3 rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-[#0D0F12] hover:bg-brand-600"
+            >
+              Générer une clé de synchro
+            </button>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="flex-1">
+                <label className="mb-1 block text-xs text-[var(--text-soft)]">
+                  …ou colle une clé existante (autre appareil)
+                </label>
+                <input
+                  value={pasteKey}
+                  onChange={(e) => setPasteKey(e.target.value)}
+                  placeholder="ant_…"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 font-mono text-sm outline-none focus:border-brand-500"
+                />
+              </div>
+              <button
+                onClick={connectWithKey}
+                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/5"
+              >
+                Connecter
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {genKey && (
+              <div className="mb-3 rounded-lg border border-brand-500/40 bg-brand-500/10 p-3">
+                <div className="mb-1 text-sm font-semibold">
+                  ✓ Ta clé de synchro — copie-la sur tes autres appareils
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap rounded bg-black/10 px-2 py-1 text-xs dark:bg-white/10">
+                    {genKey}
+                  </code>
+                  <CopyButton text={genKey} />
+                </div>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-medium text-green-600 dark:text-green-400">
+                ● Synchro active
+              </span>
+              <button
+                onClick={() => void syncNow()}
+                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/5"
+              >
+                ↻ Synchroniser maintenant
+              </button>
+              <button
+                onClick={disconnectSync}
+                className="rounded-lg px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/10"
+              >
+                Déconnecter cet appareil
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-[var(--text-soft)]">
+              {syncStatus?.ok
+                ? syncStatus.pulled
+                  ? `Dernière synchro : ${syncStatus.pulled} élément(s) reçu(s).`
+                  : 'À jour.'
+                : syncStatus?.reason === 'unauthorized'
+                  ? 'Clé invalide — reconnecte-toi.'
+                  : syncStatus?.reason === 'offline'
+                    ? 'Serveur injoignable (mode local).'
+                    : 'En attente de synchro…'}
+            </p>
+          </>
+        )}
       </section>
 
       {/* Connecteur MCP — brancher Claude à AuraNote (comme Firecrawl) */}

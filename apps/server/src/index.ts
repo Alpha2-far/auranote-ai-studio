@@ -3,10 +3,10 @@ import cors from 'cors';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
-import { listCaptures, ackCaptures } from './store';
 import { ingestCapture } from './ingest';
 import { handleMcpRequest } from './mcp';
 import { createToken, listTokens, revokeToken, validateToken, activeTokenCount } from './tokens';
+import { mergeEntities, changedSince, type Collection, type SyncEntity } from './syncStore';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
@@ -90,16 +90,23 @@ app.get('/mcp', (_req, res) =>
   res.status(405).json({ error: 'Utiliser POST (MCP streamable HTTP, stateless).' }),
 );
 
-// Le client local-first récupère les captures en attente…
-app.get('/api/v1/notes/pending', requireAuth, async (_req, res) => {
-  res.json({ captures: await listCaptures() });
+// --- Synchronisation multi-appareils (serveur = hub, last-write-wins) ---
+const COLLECTIONS: Collection[] = ['notes', 'tags', 'canvases'];
+
+// Le client envoie ses entités modifiées → fusion LWW dans le store du volume.
+app.post('/api/v1/sync/push', requireAuth, async (req, res) => {
+  const body = (req.body ?? {}) as Partial<Record<Collection, SyncEntity[]>>;
+  for (const c of COLLECTIONS) {
+    if (Array.isArray(body[c])) await mergeEntities(c, body[c] as SyncEntity[]);
+  }
+  res.json({ ok: true, serverTime: new Date().toISOString() });
 });
 
-// …puis les acquitte une fois importées
-app.post('/api/v1/notes/ack', requireAuth, async (req, res) => {
-  const ids = Array.isArray(req.body?.ids) ? (req.body.ids as string[]) : [];
-  const removed = await ackCaptures(ids);
-  res.json({ removed });
+// Le client récupère tout ce qui a changé depuis `since` (tombstones inclus).
+app.get('/api/v1/sync/pull', requireAuth, async (req, res) => {
+  const since = typeof req.query.since === 'string' ? req.query.since : undefined;
+  const changes = await changedSince(since);
+  res.json({ changes, serverTime: new Date().toISOString() });
 });
 
 // Fichiers statiques du web (build Vite) + fallback SPA

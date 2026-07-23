@@ -4,7 +4,7 @@ import { db, createNote } from '../db/db';
 import { useUI } from '../store/useUI';
 import { NoteCard } from '../components/NoteCard';
 import { searchNotes } from '../lib/search';
-import { importPendingNow } from '../lib/api';
+import { syncNow } from '../lib/sync';
 import { useNavigate } from 'react-router-dom';
 import type { Note } from '@auranote/core';
 
@@ -17,13 +17,20 @@ export function NotesPage() {
   const sync = async () => {
     setSyncing(true);
     setSyncMsg('');
-    const n = await importPendingNow();
+    const r = await syncNow();
     setSyncing(false);
-    setSyncMsg(n > 0 ? `${n} note(s) importée(s)` : 'Rien de nouveau');
+    if (!r.ok && r.reason === 'no-key') setSyncMsg('Aucune clé de sync (Réglages)');
+    else if (!r.ok && r.reason === 'unauthorized') setSyncMsg('Clé invalide');
+    else if (!r.ok) setSyncMsg('Serveur injoignable');
+    else setSyncMsg(r.pulled ? `${r.pulled} élément(s) reçu(s)` : 'À jour');
     setTimeout(() => setSyncMsg(''), 2500);
   };
-  const notes = useLiveQuery(() => db.notes.orderBy('updatedAt').reverse().toArray(), [], []);
-  const tags = useLiveQuery(() => db.tags.toArray(), [], []);
+  const notes = useLiveQuery(
+    () => db.notes.orderBy('updatedAt').reverse().filter((n) => !n.deletedAt).toArray(),
+    [],
+    [],
+  );
+  const tags = useLiveQuery(() => db.tags.filter((t) => !t.deletedAt).toArray(), [], []);
 
   const filtered = useMemo(() => {
     let list: Note[] = notes;

@@ -31,6 +31,9 @@ export interface Tag {
   id: string;
   name: string;
   color: string;
+  updatedAt?: string;
+  /** Soft-delete pour la synchronisation (tombstone). */
+  deletedAt?: string | null;
 }
 
 export type SyncState = 'local' | 'pending' | 'synced';
@@ -47,6 +50,8 @@ export interface Note {
   createdAt: string;
   updatedAt: string;
   syncState: SyncState;
+  /** Soft-delete pour la synchronisation (tombstone). */
+  deletedAt?: string | null;
 }
 
 export interface CanvasNode {
@@ -72,6 +77,8 @@ export interface Canvas {
   edges: CanvasEdge[];
   createdAt: string;
   updatedAt: string;
+  /** Soft-delete pour la synchronisation (tombstone). */
+  deletedAt?: string | null;
 }
 
 /** Résultat de l'analyse d'un texte collé/ingéré */

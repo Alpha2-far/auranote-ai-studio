@@ -53,13 +53,19 @@ npm start              # sert apps/web/dist + l'API sur $PORT (défaut 3000)
 | Méthode | Route | Rôle |
 |---|---|---|
 | GET | `/health` | Sonde Railway |
-| POST | `/api/v1/notes/ingest` | Reçoit une capture `{content,title?,tags?,source?}` (Bearer `API_SECRET` si défini) |
-| GET | `/api/v1/notes/pending` | Le web récupère les captures en attente |
-| POST | `/api/v1/notes/ack` | Le web acquitte les captures importées |
+| POST | `/api/v1/notes/ingest` | Crée une note depuis `{content,title?,tags?,source?}` (Bearer si auth active) |
+| POST | `/api/v1/sync/push` | L'appareil envoie ses entités modifiées → fusion last-write-wins |
+| GET | `/api/v1/sync/pull?since=` | L'appareil récupère les changements depuis `since` (tombstones inclus) |
+| GET/POST/DELETE | `/api/v1/tokens` | Clés de synchro / tokens du connecteur |
+| POST | `/mcp` | Connecteur MCP distant |
+
+## Synchronisation multi-appareils
+
+Le serveur (fichier `store.json` sur le volume) est le **hub**. Chaque appareil garde IndexedDB en cache et fait push/pull (last-write-wins, suppressions par tombstone `deletedAt`). Dans **Réglages → Synchronisation** : génère une clé sur un appareil, colle-la sur les autres.
 
 ## Déploiement (Railway)
 
-`Dockerfile` fourni : build du web puis exécution du serveur via `tsx`. Variables : `PORT` (auto), `API_SECRET` (optionnel), `DATA_DIR` (persistance des captures).
+`Dockerfile` fourni : build du web puis exécution du serveur via `tsx`. Variables : `PORT` (auto), `API_SECRET` (optionnel), `DATA_DIR` = **mount path du volume** (ex. `/data`) pour la persistance.
 
 ## Tests
 

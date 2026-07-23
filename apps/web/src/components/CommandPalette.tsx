@@ -8,7 +8,11 @@ import { IconPlus, IconZap, IconCanvas, IconMoon, IconSettings, IconNotes } from
 export function CommandPalette() {
   const navigate = useNavigate();
   const { paletteOpen, setPaletteOpen, setSmartPasteOpen, toggleTheme } = useUI();
-  const notes = useLiveQuery(() => db.notes.orderBy('updatedAt').reverse().limit(50).toArray(), [], []);
+  const notes = useLiveQuery(
+    () => db.notes.orderBy('updatedAt').reverse().filter((n) => !n.deletedAt).limit(50).toArray(),
+    [],
+    [],
+  );
 
   const go = (fn: () => void) => {
     setPaletteOpen(false);
