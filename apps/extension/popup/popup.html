@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        width: 260px;
+        margin: 0;
+        font-family: 'Inter', system-ui, sans-serif;
+        background: #0d0f12;
+        color: #f4efe6;
+        padding: 16px;
+      }
+      .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+      .brand b { font-size: 15px; }
+      button {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        background: linear-gradient(135deg, #e2b872, #c49a54);
+        color: #0d0f12;
+      }
+      #status { margin-top: 10px; font-size: 12px; color: #a9a49a; min-height: 16px; }
+      a { color: #e2b872; font-size: 11px; display: inline-block; margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="brand">
+      <img src="../icon.svg" width="26" height="26" alt="" />
+      <b>AuraNote</b>
+    </div>
+    <button id="capture">⚡ Capturer la réponse IA</button>
+    <div id="status"></div>
+    <a href="options.html" target="_blank">Réglages (endpoint)…</a>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

@@ -1,132 +1,68 @@
-# ⚡ AuraNote AI Studio
+# AuraNote v2
 
-<p align="center">
-  <img src="assets/icon.svg" width="120" height="120" alt="AuraNote Logo" />
-</p>
+Carnet de notes intelligent et **second cerveau**, local-first. Prise de notes générale (éditeur Markdown riche, tags libres colorés, épingle/favoris, recherche & palette de commandes, **canvas infini**) avec capture des réponses d'IA (Gemini, Claude, ChatGPT) en un clic.
 
-<p align="center">
-  <b>Le carnet de réflexions intelligent et "Second Cerveau" pour centraliser vos échanges avec les IA</b>
-</p>
-
-<p align="center">
-  <a href="#-présentation">Présentation</a> •
-  <a href="#-fonctionnalités-clés">Fonctionnalités</a> •
-  <a href="#-architecture">Architecture</a> •
-  <a href="#-installation-locale">Installation</a> •
-  <a href="#-déploiement-sur-railway">Déploiement Railway</a> •
-  <a href="#-script-python-de-nettoyage">Script Python</a>
-</p>
-
----
-
-## 💡 Présentation
-
-**AuraNote AI Studio** est un carnet de réflexions intelligent et un coffre-fort de connaissances personnel. Il est spécialement conçu pour centraliser, organiser et pérenniser toutes les idées, décisions stratégiques, choix d'architecture et synthèses issues de vos interactions avec les IA (**Gemini**, **Claude**, **ChatGPT**).
-
----
-
-## 🎯 Fonctionnalités Clés
-
-- **⚡ Smart Paste (Coller Intelligent) :** Bouton 1-clic qui prend le texte copié depuis Gemini/Claude/ChatGPT, purge les scories d'UI (*"ChatGPT a dit :"*, *"Copy code"*), déduit un titre propre et classe la note.
-- **🗂️ Classement par Auras Thématiques :**
-  - 🟣 **Stratégie & Décisions**
-  - 🔵 **Actions & Objectifs**
-  - 🟢 **Technique & Architecture**
-  - 🟡 **Workflows & Processus**
-  - 🟠 **Inspirations & Idées brutes**
-- **📂 Synchronisation Fichier Local (`Monidée.md`) :** Intégration de la *File System Access API* du W3C pour synchroniser physiquement vos notes dans votre fichier local `Monidée.md`.
-- **🧩 Extension Navigateur PC (Chrome MV3) :** Clic droit sur n'importe quel site IA -> *Envoyer vers AuraNote*.
-- **📱 Partage Mobile PWA (Web Share Target) :** Menu Partager natif Android/iOS vers AuraNote.
-- **📄 Exportation 1-Clic :** Export au format `.md` (Markdown) ou `.pdf` (Impression épurée).
-- **🐍 Script Python de Mise au Propre :** Script CLI `scripts/clean_and_structure.py` pour dépolluer et restructurer les notes brutes.
-
----
-
-## 🏛️ Architecture du Projet
-
-Le projet suit une architecture **Local-First & Modular Ingestion** :
+## Architecture (monorepo npm workspaces)
 
 ```
-auranote-ai-studio/
-├── index.html                   # Entrée SPA principal HTML5
-├── manifest.webmanifest         # PWA Manifest & Web Share Target
-├── sw.js                        # Service Worker PWA
-├── assets/                      # Icônes & SVG Officiel
-│   └── icon.svg
-├── css/                         # Design System Obsidienne Nuit (#0D0F12, #E2B872)
-│   ├── main.css
-│   ├── auras.css
-│   └── zen-editor.css
-├── js/                          # Code Applicatif ES6+
-│   ├── config.js
-│   ├── app.js
-│   ├── models/Note.js
-│   ├── services/
-│   │   ├── StorageService.js        (IndexedDB Engine)
-│   │   ├── LocalFileSyncService.js  (Sync Monidée.md)
-│   │   ├── SmartPasteService.js     (Cleaning & Title Generator)
-│   │   └── ExportService.js         (Markdown & PDF Export)
-│   ├── components/                  (Composants UI)
-│   └── utils/sanitizer.js           (Sanitizer XSS & UI Scraps)
-├── extension/                   # Extension Chrome Manifest V3
-├── server/                      # Serveur Node.js / Express pour Railway
-│   ├── index.js
-│   └── routes/ingest.js
-└── scripts/                     # Scripts d'Ingénierie
-    └── clean_and_structure.py   (Script Python de nettoyage)
+packages/core      Types + moteur de nettoyage/segmentation IA (TypeScript, testé)
+apps/web           PWA React + Vite + TypeScript + Tailwind v4 (l'app principale)
+apps/server        API Express (ingestion des captures + service du build web)
+apps/extension     Extension Chrome MV3 (capture 1-clic → API)
+assets/icon.svg    Logo (source de vérité unique)
 ```
 
----
+- **Local-first** : la source de vérité des notes est **IndexedDB** (via Dexie) dans le navigateur. Le serveur ne fait que **relayer** les captures externes (extension, partage mobile) que le web importe puis acquitte.
+- **Stack web** : React 18, React Router, Zustand (état UI), Dexie (stockage), TipTap + tiptap-markdown (éditeur), MiniSearch (recherche), cmdk (palette ⌘K), React Flow (canvas), vite-plugin-pwa (PWA/offline).
+- Le code TypeScript (core + serveur) s'exécute via **tsx** — pas d'étape de compilation séparée pour le serveur.
 
-## 💻 Installation & Lancement Local
-
-### Prérequis
-- Node.js v18+ 
-- Python 3.8+ (optionnel, pour les scripts CLI)
+## Démarrer en local
 
 ```bash
-# 1. Cloner le dépôt
-git clone https://github.com/Alpha2-far/auranote-ai-studio.git
-cd auranote-ai-studio
+npm install            # installe tous les workspaces
 
-# 2. Installer les dépendances
-npm install
+# Terminal 1 — API (port 3000)
+npm run dev:server
 
-# 3. Lancer le serveur local
-npm start
+# Terminal 2 — web (Vite, port 5173, proxifie /api → 3000)
+npm run dev
 ```
 
-Rendez-vous ensuite sur **[http://localhost:3000](http://localhost:3000)**.
+Ouvre http://localhost:5173.
 
----
-
-## 🚂 Déploiement sur Railway
-
-Ce dépôt est configuré pour être déployé en 1-clic sur **Railway** :
-
-1. Connectez-vous sur [Railway.app](https://railway.app).
-2. Cliquez sur **New Project** -> **Deploy from GitHub repo**.
-3. Sélectionnez le dépôt `Alpha2-far/auranote-ai-studio`.
-4. Railway détectera automatiquement le fichier `railway.json` / `package.json` et déploiera votre application !
-
-### Variables d'Environnement Optionnelles (Railway) :
-- `PORT` : `3000` (défini automatiquement par Railway)
-- `API_SECRET` : Votre jeton secret pour sécuriser l'API Webhook `/api/v1/notes/ingest`
-
----
-
-## 🐍 Script Python de Nettoyage
+## Build & production
 
 ```bash
-# Dépolluer et structurer un texte brut en Markdown
-python3 scripts/clean_and_structure.py "Votre texte brut ou réponse IA"
-
-# Générer une sortie JSON pour l'API
-python3 scripts/clean_and_structure.py --json "Mon texte"
+npm run build          # core (typecheck) + web (dist) + server (typecheck)
+npm start              # sert apps/web/dist + l'API sur $PORT (défaut 3000)
 ```
 
----
+## Raccourcis
 
-## 📜 Licence
+- `⌘/Ctrl + K` — palette de commandes / recherche
+- `⌘/Ctrl + J` — Smart Paste (coller une réponse d'IA)
 
-Projet développé avec soin sous licence MIT.
+## Capture d'IA
+
+1. **Smart Paste** (dans l'app) : colle un texte → nettoyage des scories UI, extraction du titre, détection des sections/callouts.
+2. **Partage mobile** (PWA) : « Partager » depuis Gemini/Claude/ChatGPT → AuraNote (`/share-target`).
+3. **Extension** (`apps/extension`, à charger non empaquetée dans `chrome://extensions`) : menu contextuel / popup → `POST /api/v1/notes/ingest`. Configure l'endpoint dans les options de l'extension.
+
+## API serveur
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| GET | `/health` | Sonde Railway |
+| POST | `/api/v1/notes/ingest` | Reçoit une capture `{content,title?,tags?,source?}` (Bearer `API_SECRET` si défini) |
+| GET | `/api/v1/notes/pending` | Le web récupère les captures en attente |
+| POST | `/api/v1/notes/ack` | Le web acquitte les captures importées |
+
+## Déploiement (Railway)
+
+`Dockerfile` fourni : build du web puis exécution du serveur via `tsx`. Variables : `PORT` (auto), `API_SECRET` (optionnel), `DATA_DIR` (persistance des captures).
+
+## Tests
+
+```bash
+npm test               # tests du moteur de parsing (packages/core)
+```

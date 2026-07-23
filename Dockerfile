@@ -1,17 +1,19 @@
+# AuraNote v2 — image unique : install workspaces, build du web (Vite), run serveur (tsx)
 FROM node:20-alpine
-
 WORKDIR /app
 
-# Copie et installation des dépendances de production
+# Dépendances (tous les workspaces ; tsx sert à exécuter le serveur TS en prod)
 COPY package*.json ./
-RUN npm ci --omit=dev || npm install
+COPY packages/core/package.json packages/core/
+COPY apps/web/package.json apps/web/
+COPY apps/server/package.json apps/server/
+RUN npm install
 
-# Copie de tout le code source
+# Code source + build du front
 COPY . .
+RUN npm run build:web
 
-# Port par défaut
+ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
-
-# Commande de démarrage
-CMD ["node", "server/index.js"]
+CMD ["npx", "tsx", "apps/server/src/index.ts"]

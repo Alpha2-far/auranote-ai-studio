@@ -1,15 +1,19 @@
 {
-  "name": "auranote-ai-studio",
-  "version": "1.0.0",
-  "description": "AuraNote AI Studio - Carnet de réflexions intelligent",
-  "main": "server/index.js",
+  "name": "auranote",
+  "version": "2.0.0",
+  "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node server/index.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5"
+    "dev": "npm run dev --workspace @auranote/web",
+    "dev:server": "npm run dev --workspace @auranote/server",
+    "build": "npm run build --workspace @auranote/core && npm run build --workspace @auranote/web && npm run build --workspace @auranote/server",
+    "build:web": "npm run build --workspace @auranote/web",
+    "build:extension": "npm run build --workspace @auranote/extension",
+    "test": "npm run test --workspace @auranote/core",
+    "start": "node apps/server/dist/index.js"
   }
 }

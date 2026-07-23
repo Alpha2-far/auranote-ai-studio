@@ -24,5 +24,13 @@ Thumbs.db
 *.swp
 *.swo
 
+# Build output
+dist/
+apps/web/dev-dist/
+*.local
+
+# Data (serveur)
+apps/server/data/
+
 # Temporary scratch & logs
 *.log

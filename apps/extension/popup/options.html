@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AuraNote — Réglages</title>
+    <style>
+      body { font-family: 'Inter', system-ui, sans-serif; max-width: 480px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; }
+      h1 { font-size: 18px; }
+      label { display: block; margin: 16px 0 4px; font-weight: 600; font-size: 14px; }
+      input { width: 100%; padding: 9px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+      button { margin-top: 20px; padding: 10px 16px; border: none; border-radius: 8px; background: #e2b872; font-weight: 700; cursor: pointer; }
+      #saved { color: #22c55e; font-size: 13px; margin-left: 10px; }
+      small { color: #777; }
+    </style>
+  </head>
+  <body>
+    <h1>Réglages AuraNote</h1>
+    <label for="apiBase">Endpoint de l'API</label>
+    <input id="apiBase" placeholder="http://localhost:3000" />
+    <small>Ex. http://localhost:3000 en local, ou l'URL Railway déployée.</small>
+    <label for="apiSecret">Secret API (optionnel)</label>
+    <input id="apiSecret" type="password" placeholder="API_SECRET (si configuré côté serveur)" />
+    <div>
+      <button id="save">Enregistrer</button>
+      <span id="saved"></span>
+    </div>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

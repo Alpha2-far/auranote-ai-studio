@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git remote *)",
+      "Bash(chmod +x deploy.sh)",
+      "Bash(grep -E \"\\\\.env$\")",
+      "Bash(./deploy.sh)"
+    ]
+  }
+}

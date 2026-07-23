@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "AuraNote — Capture 1-Clic",
+  "version": "2.0.0",
+  "description": "Capture les réponses d'IA (Gemini, Claude, ChatGPT) vers ton carnet AuraNote.",
+  "permissions": ["contextMenus", "activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "https://gemini.google.com/*",
+    "https://*.google.com/*",
+    "https://claude.ai/*",
+    "https://chatgpt.com/*",
+    "https://*.openai.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_popup": "popup/popup.html", "default_title": "AuraNote" },
+  "options_ui": { "page": "popup/options.html", "open_in_tab": true },
+  "icons": { "128": "icon.svg" },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://gemini.google.com/*",
+        "https://claude.ai/*",
+        "https://chatgpt.com/*"
+      ],
+      "js": ["content.js"]
+    }
+  ]
+}

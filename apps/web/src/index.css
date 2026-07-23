@@ -1,0 +1,132 @@
+@import 'tailwindcss';
+@import '@xyflow/react/dist/style.css';
+
+/* Mode sombre piloté par la classe .dark sur <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Accent de marque (repris du logo) */
+  --color-brand-50: #fdf9f0;
+  --color-brand-100: #f9edd6;
+  --color-brand-300: #eccf94;
+  --color-brand-500: #e2b872;
+  --color-brand-600: #c99a4e;
+  --color-brand-700: #a67c3a;
+
+  /* Neutres clairs façon Notion/Linear */
+  --color-ink: #1a1a1a;
+  --color-ink-soft: #55534e;
+  --color-paper: #ffffff;
+  --color-canvas: #f7f7f5;
+  --color-line: #e9e7e2;
+
+  /* Neutres sombres (thème "Obsidienne") */
+  --color-ink-dark: #f4efe6;
+  --color-ink-soft-dark: #a9a49a;
+  --color-paper-dark: #161a22;
+  --color-canvas-dark: #0d0f12;
+  --color-line-dark: #262b36;
+
+  /* Couleurs de tags (les 5 Auras) */
+  --color-tag-strategy: #8b5cf6;
+  --color-tag-actions: #3b82f6;
+  --color-tag-tech: #22c55e;
+  --color-tag-workflows: #eab308;
+  --color-tag-inspirations: #f97316;
+}
+
+:root {
+  --bg: var(--color-canvas);
+  --surface: var(--color-paper);
+  --text: var(--color-ink);
+  --text-soft: var(--color-ink-soft);
+  --border: var(--color-line);
+}
+
+.dark {
+  --bg: var(--color-canvas-dark);
+  --surface: var(--color-paper-dark);
+  --text: var(--color-ink-dark);
+  --text-soft: var(--color-ink-soft-dark);
+  --border: var(--color-line-dark);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Rendu de l'éditeur TipTap */
+.tiptap {
+  outline: none;
+  min-height: 300px;
+}
+.tiptap p {
+  margin: 0 0 0.75em;
+  line-height: 1.75;
+}
+.tiptap h1 {
+  font-size: 1.6em;
+  font-weight: 700;
+  margin: 1em 0 0.4em;
+}
+.tiptap h2 {
+  font-size: 1.3em;
+  font-weight: 700;
+  margin: 1em 0 0.4em;
+}
+.tiptap ul,
+.tiptap ol {
+  padding-left: 1.4em;
+  margin: 0 0 0.75em;
+}
+.tiptap ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0.2em;
+}
+.tiptap ul[data-type='taskList'] li {
+  display: flex;
+  gap: 0.5em;
+  align-items: flex-start;
+}
+.tiptap blockquote {
+  border-left: 3px solid var(--color-brand-500);
+  padding-left: 1em;
+  color: var(--text-soft);
+  margin: 0 0 0.75em;
+}
+.tiptap code {
+  background: color-mix(in srgb, var(--color-brand-500) 14%, transparent);
+  color: var(--color-brand-700);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.tiptap pre {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  padding: 0.9em 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-soft);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
