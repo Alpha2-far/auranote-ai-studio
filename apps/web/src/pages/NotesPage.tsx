@@ -1,15 +1,27 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, createNote } from '../db/db';
 import { useUI } from '../store/useUI';
 import { NoteCard } from '../components/NoteCard';
 import { searchNotes } from '../lib/search';
+import { importPendingNow } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 import type { Note } from '@auranote/core';
 
 export function NotesPage() {
   const navigate = useNavigate();
   const { search, activeTagId, setActiveTag } = useUI();
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState('');
+
+  const sync = async () => {
+    setSyncing(true);
+    setSyncMsg('');
+    const n = await importPendingNow();
+    setSyncing(false);
+    setSyncMsg(n > 0 ? `${n} note(s) importée(s)` : 'Rien de nouveau');
+    setTimeout(() => setSyncMsg(''), 2500);
+  };
   const notes = useLiveQuery(() => db.notes.orderBy('updatedAt').reverse().toArray(), [], []);
   const tags = useLiveQuery(() => db.tags.toArray(), [], []);
 
@@ -35,21 +47,42 @@ export function NotesPage() {
             Crée ta première note, ou capture une réponse d'IA avec <b>Smart Paste</b>.
           </p>
         </div>
-        <button
-          onClick={newNote}
-          className="rounded-lg bg-brand-500 px-4 py-2 font-semibold text-[#0D0F12] hover:bg-brand-600"
-        >
-          + Créer une note
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={newNote}
+            className="rounded-lg bg-brand-500 px-4 py-2 font-semibold text-[#0D0F12] hover:bg-brand-600"
+          >
+            + Créer une note
+          </button>
+          <button
+            onClick={sync}
+            disabled={syncing}
+            className="rounded-lg border border-[var(--border)] px-4 py-2 font-medium hover:bg-black/5 disabled:opacity-50 dark:hover:bg-white/5"
+          >
+            {syncing ? 'Synchro…' : '↻ Synchroniser'}
+          </button>
+        </div>
+        {syncMsg && <span className="text-xs text-[var(--text-soft)]">{syncMsg}</span>}
       </div>
     );
   }
 
   return (
     <div className="p-4 md:p-6">
-      <div className="mb-4 flex items-baseline justify-between">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h1 className="text-xl font-bold">Notes</h1>
-        <span className="text-sm text-[var(--text-soft)]">{filtered.length} note(s)</span>
+        <div className="flex items-center gap-3">
+          {syncMsg && <span className="text-xs text-[var(--text-soft)]">{syncMsg}</span>}
+          <button
+            onClick={sync}
+            disabled={syncing}
+            className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-sm hover:bg-black/5 disabled:opacity-50 dark:hover:bg-white/5"
+            title="Importer les captures des IA / connecteurs"
+          >
+            {syncing ? 'Synchro…' : '↻ Synchroniser'}
+          </button>
+          <span className="text-sm text-[var(--text-soft)]">{filtered.length} note(s)</span>
+        </div>
       </div>
 
       {/* Filtre de tags horizontal (mobile uniquement) */}

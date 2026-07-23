@@ -4,7 +4,10 @@
       "Bash(git remote *)",
       "Bash(chmod +x deploy.sh)",
       "Bash(grep -E \"\\\\.env$\")",
-      "Bash(./deploy.sh)"
+      "Bash(./deploy.sh)",
+      "Bash(curl -s https://auranote-ai-studio-production.up.railway.app/api/config)",
+      "Bash(curl -s https://auranote-ai-studio-production.up.railway.app/api/v1/notes/pending)",
+      "Bash(curl -s -w ' [%{http_code}]\\\\n' https://auranote-ai-studio-production.up.railway.app/health)"
     ]
   }
 }
