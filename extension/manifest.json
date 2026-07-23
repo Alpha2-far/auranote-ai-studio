@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "AuraNote AI Studio - Capture 1-Clic",
+  "version": "1.0.0",
+  "description": "Capturez instantanément vos réflexions et réponses d'IA depuis Gemini, Claude ou ChatGPT vers AuraNote AI Studio.",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.google.com/*",
+    "https://*.claude.ai/*",
+    "https://*.openai.com/*",
+    "https://*.chatgpt.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "AuraNote Capture"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://gemini.google.com/*",
+        "https://claude.ai/*",
+        "https://chatgpt.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": ["content.js"]
+    }
+  ]
+}

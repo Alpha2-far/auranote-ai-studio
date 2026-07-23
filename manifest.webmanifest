@@ -1,0 +1,26 @@
+{
+  "name": "AuraNote AI Studio",
+  "short_name": "AuraNote",
+  "description": "Carnet de réflexions intelligent et second cerveau pour vos échanges avec les IA.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0F12",
+  "theme_color": "#0D0F12",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "share_target": {
+    "action": "/#share-target",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
