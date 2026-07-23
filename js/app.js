@@ -1,5 +1,5 @@
 /**
- * AuraNote AI Studio - Main Application Orchestrator
+ * AuraNote AI Studio - Main Application Orchestrator (Mobile View Switcher Support)
  */
 
 import storageService from './services/StorageService.js';
@@ -21,10 +21,11 @@ class App {
     this.searchQuery = '';
     this.isEditing = false;
     this.syncStatus = 'Non connecté';
+    this.mobileView = 'sidebar'; // 'sidebar' | 'editor'
   }
 
   async init() {
-    console.log('⚡ Initialisation de AuraNote AI Studio...');
+    console.log('⚡ Initialisation de AuraNote AI Studio (Mobile-Ready)...');
     try {
       await storageService.init();
       await this.loadNotes();
@@ -58,12 +59,13 @@ class App {
 
     if (this.activeNoteId && !this.filteredNotes.some(n => n.id === this.activeNoteId)) {
       this.activeNoteId = this.filteredNotes.length > 0 ? this.filteredNotes[0].id : null;
-    } else if (!this.activeNoteId && this.filteredNotes.length > 0) {
-      this.activeNoteId = this.filteredNotes[0].id;
     }
   }
 
   initEventListeners() {
+    // Bouton Flottant (FAB) Mobile Smart Paste
+    document.getElementById('fab-smart-paste')?.addEventListener('click', () => this.handleSmartPaste());
+
     // Écouteur pour les captures envoyées par l'Extension Navigateur
     window.addEventListener('message', async (event) => {
       if (event.data && event.data.type === 'AURANOTE_EXTENSION_CAPTURE') {
@@ -107,6 +109,7 @@ class App {
 
     await this.loadNotes();
     this.activeNoteId = savedNote.id;
+    this.mobileView = 'editor';
     this.render();
   }
 
@@ -138,14 +141,27 @@ class App {
     if (headerEl) {
       renderHeader(headerEl, {
         onSelectFile: () => this.handleSelectFile(),
-        syncStatus: this.syncStatus
+        syncStatus: this.syncStatus,
+        onSmartPaste: () => this.handleSmartPaste()
       });
-      document.getElementById('smart-paste-header-btn')?.addEventListener('click', () => this.handleSmartPaste());
+    }
+  }
+
+  updateMobileLayoutClasses() {
+    const mainLayout = document.getElementById('main-layout');
+    if (mainLayout) {
+      mainLayout.classList.remove('mobile-view-sidebar', 'mobile-view-editor');
+      if (this.mobileView === 'editor') {
+        mainLayout.classList.add('mobile-view-editor');
+      } else {
+        mainLayout.classList.add('mobile-view-sidebar');
+      }
     }
   }
 
   render() {
     this.renderHeader();
+    this.updateMobileLayoutClasses();
 
     const filterEl = document.getElementById('sidebar-filters');
     if (filterEl) {
@@ -177,6 +193,7 @@ class App {
         onSelectNote: (id) => {
           this.activeNoteId = id;
           this.isEditing = false;
+          this.mobileView = 'editor';
           this.render();
         }
       });
@@ -190,6 +207,10 @@ class App {
       renderZenEditor(editorEl, {
         note: activeNote,
         isEditing: this.isEditing,
+        onMobileBack: () => {
+          this.mobileView = 'sidebar';
+          this.render();
+        },
         onToggleEdit: (flag) => {
           this.isEditing = flag;
           this.renderEditor();
@@ -204,6 +225,7 @@ class App {
         onDeleteNote: async (id) => {
           await storageService.deleteNote(id);
           this.activeNoteId = null;
+          this.mobileView = 'sidebar';
           await this.loadNotes();
           this.showToast('Note supprimée.');
           this.render();

@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AuraNote AI Studio - Second Cerveau Intelligent</title>
   <meta name="description" content="Carnet de réflexions intelligent pour centraliser, organiser et retrouver vos échanges avec les IA (Gemini, Claude, ChatGPT).">
 
@@ -10,6 +10,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <meta name="theme-color" content="#0D0F12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <!-- CSS Stylesheets -->
   <link rel="stylesheet" href="css/main.css">
@@ -20,8 +22,8 @@
   <!-- Application Header -->
   <div id="header-app"></div>
 
-  <!-- Main Layout -->
-  <main class="main-layout">
+  <!-- Main Layout (avec bascule mobile-view-sidebar / mobile-view-editor) -->
+  <main id="main-layout" class="main-layout mobile-view-sidebar">
     <!-- Sidebar: Search, Filters & Note List -->
     <aside class="sidebar">
       <div id="sidebar-filters" class="sidebar-header"></div>
@@ -31,6 +33,11 @@
     <!-- Main Content: Zen Reader & Editor -->
     <section id="main-editor" style="display: flex; flex-direction: column; flex: 1;"></section>
   </main>
+
+  <!-- Floating Action Button pour Mobile -->
+  <button id="fab-smart-paste" class="fab-smart-paste" aria-label="Smart Paste Rapide">
+    ⚡ Smart Paste
+  </button>
 
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
