@@ -10,7 +10,8 @@ export interface IngestInput {
 }
 
 const TAG_COLORS = ['#8b5cf6', '#3b82f6', '#22c55e', '#eab308', '#f97316', '#ec4899', '#14b8a6', '#ef4444'];
-const colorFor = (name: string) => {
+/** Couleur stable dérivée du nom du tag. */
+export const colorFor = (name: string) => {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
   return TAG_COLORS[h % TAG_COLORS.length];

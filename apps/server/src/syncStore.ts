@@ -68,11 +68,28 @@ export async function changedSince(since: string | undefined): Promise<Record<Co
   return { notes: pick(store.notes), tags: pick(store.tags), canvases: pick(store.canvases) };
 }
 
+/** Insère/écrase une entité dans une collection. */
+export async function upsertEntity(collection: Collection, entity: SyncEntity): Promise<void> {
+  const store = await load();
+  store[collection][entity.id] = entity;
+  await flush();
+}
+
 /** Insère/écrase une note (utilisé par l'ingestion du connecteur). */
 export async function upsertNote(note: SyncEntity): Promise<void> {
+  await upsertEntity('notes', note);
+}
+
+/** Liste les entités non supprimées d'une collection. */
+export async function listActive(collection: Collection): Promise<SyncEntity[]> {
   const store = await load();
-  store.notes[note.id] = note;
-  await flush();
+  return Object.values(store[collection]).filter((e) => !e.deletedAt);
+}
+
+/** Récupère une entité par id (ou undefined). */
+export async function getEntity(collection: Collection, id: string): Promise<SyncEntity | undefined> {
+  const store = await load();
+  return store[collection][id];
 }
 
 /** Trouve (par nom, insensible à la casse) ou crée un tag ; renvoie son id. */
