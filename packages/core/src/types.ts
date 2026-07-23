@@ -62,6 +62,8 @@ export interface CanvasNode {
   noteId?: string;
   text?: string;
   label?: string;
+  /** Paramètres d'exécution (trigger: scope/tagId ; if: field/op/value ; action: type/tagId). */
+  config?: Record<string, unknown>;
   x: number;
   y: number;
   w: number;

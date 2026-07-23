@@ -211,6 +211,12 @@ export const IconHeading1 = (p: IconProps) => (
   </Svg>
 );
 
+export const IconPlay = (p: IconProps) => (
+  <Svg {...p} fill="currentColor" stroke="none">
+    <polygon points="6 3 20 12 6 21 6 3" />
+  </Svg>
+);
+
 export const IconHeading2 = (p: IconProps) => (
   <Svg {...p}>
     <path d="M4 12h8" />

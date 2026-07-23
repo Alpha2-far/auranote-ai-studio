@@ -15,8 +15,9 @@ import {
 import { newId, type Canvas, type Note, type CanvasNodeKind } from '@auranote/core';
 import { db, saveCanvas, deleteCanvas } from '../db/db';
 import { nodeTypes, type NodeData } from '../canvas/nodes';
+import { runCanvas } from '../canvas/engine';
 import { Modal, ConfirmDialog } from '../components/Modal';
-import { IconArrowLeft, IconPlus, IconTrash } from '../components/icons';
+import { IconArrowLeft, IconPlus, IconTrash, IconPlay } from '../components/icons';
 
 const edgeStyle = (handle?: string | null) =>
   handle === 'true'
@@ -61,6 +62,26 @@ export function CanvasPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerNotes, setPickerNotes] = useState<Note[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [runMsg, setRunMsg] = useState('');
+  const [running, setRunning] = useState(false);
+
+  const run = async () => {
+    setRunning(true);
+    setRunMsg('Exécution…');
+    const cn = nodes.map((n) => {
+      const d = n.data as NodeData;
+      return { id: n.id, kind: d.kind, noteId: d.noteId, text: d.text, label: d.label, config: d.config, x: n.position.x, y: n.position.y, w: 176, h: 120 };
+    });
+    const ce = edges.map((e) => ({ id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle ?? null }));
+    const r = await runCanvas(cn, ce);
+    setRunning(false);
+    setRunMsg(
+      r.actions
+        ? `✓ ${r.processed} note(s) traitée(s) · ${r.log.join(' · ')}`
+        : r.log[0] ?? 'Aucune action appliquée',
+    );
+    setTimeout(() => setRunMsg(''), 6000);
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -172,8 +193,16 @@ export function CanvasPage() {
               <IconPlus size={13} /> {k.label}
             </button>
           ))}
-          <button onClick={openPicker} className="rounded-lg bg-brand-500 px-2 py-1 text-xs font-semibold text-[#0D0F12] hover:bg-brand-600">
+          <button onClick={openPicker} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs hover:bg-black/5 dark:hover:bg-white/5">
             Depuis une note
+          </button>
+          <button
+            onClick={run}
+            disabled={running}
+            className="flex items-center gap-1 rounded-lg bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+            title="Exécuter le workflow"
+          >
+            <IconPlay size={12} /> Exécuter
           </button>
           <button
             onClick={() => setConfirmDelete(true)}
@@ -184,6 +213,12 @@ export function CanvasPage() {
           </button>
         </div>
       </div>
+
+      {runMsg && (
+        <div className="border-b border-[var(--border)] bg-green-500/10 px-3 py-1.5 text-xs text-[var(--text)]">
+          {runMsg}
+        </div>
+      )}
 
       <div className="min-h-0 flex-1">
         <ReactFlow
