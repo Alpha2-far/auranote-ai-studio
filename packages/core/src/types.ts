@@ -54,10 +54,14 @@ export interface Note {
   deletedAt?: string | null;
 }
 
+export type CanvasNodeKind = 'card' | 'trigger' | 'if' | 'action';
+
 export interface CanvasNode {
   id: string;
+  kind?: CanvasNodeKind;
   noteId?: string;
   text?: string;
+  label?: string;
   x: number;
   y: number;
   w: number;
@@ -68,6 +72,8 @@ export interface CanvasEdge {
   id: string;
   source: string;
   target: string;
+  /** Pour les nœuds « if » : 'true' | 'false'. */
+  sourceHandle?: string | null;
 }
 
 export interface Canvas {

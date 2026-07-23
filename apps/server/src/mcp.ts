@@ -102,13 +102,19 @@ function buildMcpServer(): McpServer {
 
   server.tool(
     'add_canvas_node',
-    "Ajoute une carte à un canvas : soit du texte libre, soit une référence à une note existante. Renvoie l'id du nœud.",
+    [
+      "Ajoute un nœud à un canvas. Permet de construire un workflow visuel (style n8n).",
+      'kind : "card" (texte ou note), "trigger" (déclencheur), "if" (condition Vrai/Faux), "action" (étape).',
+      "Renvoie l'id du nœud (à réutiliser dans link_canvas_nodes).",
+    ].join('\n'),
     {
       canvasId: z.string().describe('Id du canvas (voir create_canvas).'),
-      text: z.string().optional().describe('Texte de la carte (si carte libre).'),
+      kind: z.enum(['card', 'trigger', 'if', 'action']).optional().describe('Type de nœud (défaut : card).'),
+      label: z.string().optional().describe('Libellé du nœud (ex. condition, action, titre de carte).'),
+      text: z.string().optional().describe('Texte détaillé (cartes libres).'),
       noteId: z.string().optional().describe("Id d'une note à référencer (voir search_notes)."),
     },
-    async ({ canvasId, text: nodeText, noteId }) => {
+    async ({ canvasId, kind, label, text: nodeText, noteId }) => {
       const canvas = await getEntity('canvases', canvasId);
       if (!canvas || canvas.deletedAt) return fail('Canvas introuvable.');
       const nodes = Array.isArray(canvas.nodes) ? (canvas.nodes as Array<Record<string, unknown>>) : [];
@@ -116,6 +122,8 @@ function buildMcpServer(): McpServer {
       const nodeId = randomUUID();
       nodes.push({
         id: nodeId,
+        kind: kind ?? 'card',
+        label: label ?? nodeText,
         text: nodeText,
         noteId,
         x: 120 + (i % 5) * 60,
@@ -124,7 +132,7 @@ function buildMcpServer(): McpServer {
         h: 120,
       });
       await upsertEntity('canvases', { ...canvas, nodes, updatedAt: now() });
-      return text(`✓ Carte ajoutée au canvas (id ${nodeId}).`);
+      return text(`✓ Nœud « ${label ?? kind ?? 'card'} » ajouté (id ${nodeId}).`);
     },
   );
 
@@ -135,14 +143,15 @@ function buildMcpServer(): McpServer {
       canvasId: z.string(),
       sourceId: z.string().describe('Id du nœud source.'),
       targetId: z.string().describe('Id du nœud cible.'),
+      branch: z.enum(['true', 'false']).optional().describe("Pour un nœud 'if' : sortie Vrai ou Faux."),
     },
-    async ({ canvasId, sourceId, targetId }) => {
+    async ({ canvasId, sourceId, targetId, branch }) => {
       const canvas = await getEntity('canvases', canvasId);
       if (!canvas || canvas.deletedAt) return fail('Canvas introuvable.');
       const edges = Array.isArray(canvas.edges) ? (canvas.edges as Array<Record<string, unknown>>) : [];
-      edges.push({ id: randomUUID(), source: sourceId, target: targetId });
+      edges.push({ id: randomUUID(), source: sourceId, target: targetId, sourceHandle: branch ?? null });
       await upsertEntity('canvases', { ...canvas, edges, updatedAt: now() });
-      return text('✓ Cartes reliées.');
+      return text('✓ Nœuds reliés.');
     },
   );
 
