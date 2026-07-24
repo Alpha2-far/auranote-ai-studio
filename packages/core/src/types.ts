@@ -36,6 +36,14 @@ export interface Tag {
   deletedAt?: string | null;
 }
 
+export interface Folder {
+  id: string;
+  name: string;
+  parentId?: string | null;
+  updatedAt?: string;
+  deletedAt?: string | null;
+}
+
 export type SyncState = 'local' | 'pending' | 'synced';
 
 export interface Note {
@@ -44,6 +52,7 @@ export interface Note {
   contentMarkdown: string;
   sections: Section[];
   tagIds: string[];
+  folderId?: string | null;
   pinned: boolean;
   favorite: boolean;
   source: string;

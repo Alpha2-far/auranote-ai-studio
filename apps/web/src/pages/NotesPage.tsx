@@ -10,7 +10,15 @@ import type { Note } from '@auranote/core';
 
 export function NotesPage() {
   const navigate = useNavigate();
-  const { search, activeTagId, setActiveTag } = useUI();
+  const { search, activeTagId, activeFolderId, setActiveTag, setActiveFolder } = useUI();
+  const activeFolder = useLiveQuery(
+    async () => {
+      if (!activeFolderId) return undefined;
+      const f = await db.folders.get(activeFolderId);
+      return f && !f.deletedAt ? f : undefined;
+    },
+    [activeFolderId],
+  );
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
 
@@ -34,11 +42,12 @@ export function NotesPage() {
 
   const filtered = useMemo(() => {
     let list: Note[] = notes;
+    if (activeFolderId) list = list.filter((n) => n.folderId === activeFolderId);
     if (activeTagId) list = list.filter((n) => n.tagIds.includes(activeTagId));
     if (search.trim()) list = searchNotes(list, search);
     // Épinglées d'abord
     return [...list].sort((a, b) => Number(b.pinned) - Number(a.pinned));
-  }, [notes, activeTagId, search]);
+  }, [notes, activeFolderId, activeTagId, search]);
 
   const newNote = async () => {
     const note = await createNote({ title: '' });
@@ -77,7 +86,7 @@ export function NotesPage() {
   return (
     <div className="p-4 md:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">Notes</h1>
+        <h1 className="text-xl font-bold">{activeFolder ? `🗂 ${activeFolder.name}` : 'Notes'}</h1>
         <div className="flex items-center gap-3">
           {syncMsg && <span className="text-xs text-[var(--text-soft)]">{syncMsg}</span>}
           <button
@@ -95,9 +104,12 @@ export function NotesPage() {
       {/* Filtre de tags horizontal (mobile uniquement) */}
       <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 md:hidden [scrollbar-width:none]">
         <button
-          onClick={() => setActiveTag(null)}
+          onClick={() => {
+            setActiveTag(null);
+            setActiveFolder(null);
+          }}
           className={`shrink-0 rounded-full border px-3 py-1 text-sm ${
-            !activeTagId ? 'border-brand-500 bg-brand-500/10' : 'border-[var(--border)]'
+            !activeTagId && !activeFolderId ? 'border-brand-500 bg-brand-500/10' : 'border-[var(--border)]'
           }`}
         >
           Tous
@@ -105,7 +117,10 @@ export function NotesPage() {
         {tags.map((t) => (
           <button
             key={t.id}
-            onClick={() => setActiveTag(t.id)}
+            onClick={() => {
+              setActiveTag(t.id);
+              setActiveFolder(null);
+            }}
             className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
               activeTagId === t.id ? 'border-brand-500 bg-brand-500/10' : 'border-[var(--border)]'
             }`}

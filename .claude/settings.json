@@ -8,7 +8,15 @@
       "Bash(curl -s https://auranote-ai-studio-production.up.railway.app/api/config)",
       "Bash(curl -s https://auranote-ai-studio-production.up.railway.app/api/v1/notes/pending)",
       "Bash(curl -s -w ' [%{http_code}]\\\\n' https://auranote-ai-studio-production.up.railway.app/health)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(git --no-pager diff --stat HEAD)",
+      "Bash(git --no-pager diff HEAD --stat)",
+      "Bash(git --no-pager diff HEAD -- packages/core/src/types.ts apps/web/src/db/db.ts apps/web/src/lib/sync.ts apps/server/src/syncStore.ts)",
+      "Bash(git --no-pager diff HEAD)",
+      "Bash(git --no-pager diff HEAD -- apps/server/src/ingest.ts apps/server/src/mcp.ts apps/server/src/index.ts apps/web/src/components/Layout.tsx apps/web/src/components/FolderTree.tsx apps/web/src/pages/NotesPage.tsx apps/web/src/pages/NoteEditorPage.tsx apps/web/src/store/useUI.ts apps/web/src/canvas/engine.ts apps/web/src/canvas/nodes.tsx)",
+      "Bash(git --no-pager grep -n \"activeFolderId\\\\|setActiveFolder\\\\|folderId\" -- apps/web/src)",
+      "Bash(python3 -m unittest discover -s tests -v)",
+      "Bash(python3 cli.py --json)"
     ]
   }
 }

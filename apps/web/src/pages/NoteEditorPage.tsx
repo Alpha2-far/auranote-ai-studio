@@ -19,6 +19,7 @@ export function NoteEditorPage() {
     },
     [id],
   );
+  const folders = useLiveQuery(() => db.folders.filter((f) => !f.deletedAt).toArray(), [], []);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -98,8 +99,21 @@ export function NoteEditorPage() {
         className="mb-2 w-full bg-transparent text-2xl font-bold outline-none placeholder:text-[var(--text-soft)] md:text-3xl"
       />
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <TagPicker selected={note.tagIds} onChange={(tagIds) => void updateNote(note.id, { tagIds })} />
+        <label className="flex items-center gap-1.5 text-sm text-[var(--text-soft)]">
+          🗂
+          <select
+            value={note.folderId ?? ''}
+            onChange={(e) => void updateNote(note.id, { folderId: e.target.value || null })}
+            className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-sm outline-none focus:border-brand-500"
+          >
+            <option value="">Sans dossier</option>
+            {folders.map((f) => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <Editor content={note.contentMarkdown} onChange={onContentChange} />

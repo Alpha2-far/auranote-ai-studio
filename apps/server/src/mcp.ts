@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Request, Response } from 'express';
 import { ingestCapture, colorFor } from './ingest';
-import { findOrCreateTag, listActive, getEntity, upsertEntity, type SyncEntity } from './syncStore';
+import { findOrCreateTag, findOrCreateFolder, listActive, getEntity, upsertEntity, type SyncEntity } from './syncStore';
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
 const fail = (t: string) => ({ isError: true, content: [{ type: 'text' as const, text: t }] });
@@ -26,14 +26,25 @@ function buildMcpServer(): McpServer {
       content: z.string().describe('Contenu en Markdown structuré (titres, listes, cases à cocher, citations, code).'),
       title: z.string().optional().describe('Titre clair ; extrait du contenu si absent.'),
       tags: z.array(z.string()).optional().describe('2 à 5 étiquettes courtes, créées/assignées automatiquement.'),
+      folder: z.string().optional().describe('Dossier de rangement (créé si absent).'),
     },
-    async ({ content, title, tags }) => {
+    async ({ content, title, tags, folder }) => {
       try {
-        const { id, title: saved } = await ingestCapture({ content, title, tags, source: 'MCP' });
+        const { id, title: saved } = await ingestCapture({ content, title, tags, folder, source: 'MCP' });
         return text(`✓ Note enregistrée : « ${saved} » (id ${id}).`);
       } catch (err) {
         return fail(`Échec : ${(err as Error).message}`);
       }
+    },
+  );
+
+  server.tool(
+    'create_folder',
+    "Crée un dossier de rangement (ou renvoie l'existant de même nom).",
+    { name: z.string().describe('Nom du dossier.') },
+    async ({ name }) => {
+      const id = await findOrCreateFolder(name);
+      return text(`✓ Dossier « ${name} » prêt (id ${id}).`);
     },
   );
 

@@ -9,6 +9,7 @@ interface UIState {
   smartPasteOpen: boolean;
   search: string;
   activeTagId: string | null;
+  activeFolderId: string | null;
   setTheme: (t: Theme) => void;
   toggleTheme: () => void;
   toggleSidebar: () => void;
@@ -16,6 +17,7 @@ interface UIState {
   setSmartPasteOpen: (v: boolean) => void;
   setSearch: (v: string) => void;
   setActiveTag: (id: string | null) => void;
+  setActiveFolder: (id: string | null) => void;
 }
 
 function initialTheme(): Theme {
@@ -36,6 +38,7 @@ export const useUI = create<UIState>((set, get) => ({
   smartPasteOpen: false,
   search: '',
   activeTagId: null,
+  activeFolderId: null,
   setTheme: (theme) => {
     applyTheme(theme);
     set({ theme });
@@ -51,6 +54,7 @@ export const useUI = create<UIState>((set, get) => ({
   setSmartPasteOpen: (smartPasteOpen) => set({ smartPasteOpen }),
   setSearch: (search) => set({ search }),
   setActiveTag: (activeTagId) => set({ activeTagId }),
+  setActiveFolder: (activeFolderId) => set({ activeFolderId }),
 }));
 
 /** À appeler une fois au démarrage pour appliquer le thème initial. */

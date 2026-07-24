@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Table } from 'dexie';
-import type { Note, Tag, Canvas } from '@auranote/core';
+import type { Note, Tag, Canvas, Folder } from '@auranote/core';
 import { db } from '../db/db';
 import { API_BASE } from './config';
 import { setSyncRunner } from './syncBus';
@@ -62,10 +62,11 @@ export async function syncNow(): Promise<SyncResult> {
     const changed = <T extends Entity>(arr: T[]) =>
       since ? arr.filter((e) => !e.updatedAt || e.updatedAt > since) : arr;
 
-    const [notes, tags, canvases] = await Promise.all([
+    const [notes, tags, canvases, folders] = await Promise.all([
       db.notes.toArray(),
       db.tags.toArray(),
       db.canvases.toArray(),
+      db.folders.toArray(),
     ]);
 
     let pushRes: Response;
@@ -73,7 +74,12 @@ export async function syncNow(): Promise<SyncResult> {
       pushRes = await fetch(`${API_BASE}/api/v1/sync/push`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ notes: changed(notes), tags: changed(tags), canvases: changed(canvases) }),
+        body: JSON.stringify({
+          notes: changed(notes),
+          tags: changed(tags),
+          canvases: changed(canvases),
+          folders: changed(folders),
+        }),
       });
     } catch {
       const r: SyncResult = { ok: false, reason: 'offline' };
@@ -100,7 +106,7 @@ export async function syncNow(): Promise<SyncResult> {
       return r;
     }
     const { changes, serverTime } = (await pullRes.json()) as {
-      changes: { notes: Note[]; tags: Tag[]; canvases: Canvas[] };
+      changes: { notes: Note[]; tags: Tag[]; canvases: Canvas[]; folders: Folder[] };
       serverTime: string;
     };
 
@@ -108,6 +114,7 @@ export async function syncNow(): Promise<SyncResult> {
     pulled += await applyChanges(db.notes, changes.notes ?? []);
     pulled += await applyChanges(db.tags, changes.tags ?? []);
     pulled += await applyChanges(db.canvases, changes.canvases ?? []);
+    pulled += await applyChanges(db.folders, changes.folders ?? []);
 
     localStorage.setItem(WATERMARK, serverTime);
     const r: SyncResult = { ok: true, pulled, at: serverTime };

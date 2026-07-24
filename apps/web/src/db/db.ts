@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import { PRESET_TAGS, newId, type Note, type Tag, type Canvas } from '@auranote/core';
+import { PRESET_TAGS, newId, type Note, type Tag, type Canvas, type Folder } from '@auranote/core';
 import { scheduleSync } from '../lib/syncBus';
 
 export interface Setting {
@@ -11,6 +11,7 @@ class AuraNoteDB extends Dexie {
   notes!: Table<Note, string>;
   tags!: Table<Tag, string>;
   canvases!: Table<Canvas, string>;
+  folders!: Table<Folder, string>;
   settings!: Table<Setting, string>;
 
   constructor() {
@@ -35,6 +36,18 @@ class AuraNoteDB extends Dexie {
         await tx.table('tags').toCollection().modify((t) => { t.deletedAt = null; t.updatedAt ??= stamp; });
         await tx.table('canvases').toCollection().modify((c) => { c.deletedAt = null; });
       });
+    // v4 : dossiers (arborescence) + folderId sur les notes.
+    this.version(4)
+      .stores({
+        notes: 'id, title, createdAt, updatedAt, pinned, favorite, syncState, deletedAt, folderId, *tagIds',
+        tags: 'id, name, updatedAt, deletedAt',
+        canvases: 'id, name, updatedAt, deletedAt',
+        folders: 'id, name, parentId, updatedAt, deletedAt',
+        settings: 'key',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('notes').toCollection().modify((n) => { n.folderId ??= null; });
+      });
   }
 }
 
@@ -55,6 +68,30 @@ export async function seedDatabase(): Promise<void> {
 export const activeNotes = () => db.notes.filter((n) => !n.deletedAt).toArray();
 export const activeTags = () => db.tags.filter((t) => !t.deletedAt).toArray();
 export const activeCanvases = () => db.canvases.filter((c) => !c.deletedAt).toArray();
+export const activeFolders = () => db.folders.filter((f) => !f.deletedAt).toArray();
+
+export async function createFolder(name: string, parentId: string | null = null): Promise<Folder> {
+  const folder: Folder = { id: newId(), name, parentId, updatedAt: now(), deletedAt: null };
+  await db.folders.add(folder);
+  scheduleSync();
+  return folder;
+}
+
+export async function renameFolder(id: string, name: string): Promise<void> {
+  await db.folders.update(id, { name, updatedAt: now() });
+  scheduleSync();
+}
+
+/** Soft-delete d'un dossier ; les notes qu'il contenait repassent « sans dossier ». */
+export async function deleteFolder(id: string): Promise<void> {
+  const ts = now();
+  await db.folders.update(id, { deletedAt: ts, updatedAt: ts });
+  await db.notes.where('folderId').equals(id).modify((n) => {
+    n.folderId = null;
+    n.updatedAt = ts;
+  });
+  scheduleSync();
+}
 
 export function makeNote(partial: Partial<Note> = {}): Note {
   const ts = now();
@@ -64,6 +101,7 @@ export function makeNote(partial: Partial<Note> = {}): Note {
     contentMarkdown: partial.contentMarkdown ?? '',
     sections: partial.sections ?? [],
     tagIds: partial.tagIds ?? [],
+    folderId: partial.folderId ?? null,
     pinned: partial.pinned ?? false,
     favorite: partial.favorite ?? false,
     source: partial.source ?? 'manual',

@@ -44,7 +44,7 @@ export function CanvasListPage() {
             >
               <button
                 onClick={() => setToDelete({ id: c.id, name: c.name })}
-                className="absolute right-2 top-2 rounded-lg p-1.5 text-[var(--text-soft)] opacity-0 transition hover:bg-red-500/10 hover:text-red-500 group-hover:opacity-100"
+                className="absolute right-2 top-2 rounded-lg p-1.5 text-[var(--text-soft)] opacity-100 transition hover:bg-red-500/10 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100"
                 title="Supprimer le canvas"
               >
                 <IconTrash size={15} />

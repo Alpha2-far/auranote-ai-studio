@@ -49,11 +49,15 @@ async function applyAction(node: CanvasNode, notes: Note[], log: string[]): Prom
     return 1;
   }
 
+  const folderId = c.folderId as string | undefined;
+
   for (const n of notes) {
     if (type === 'addTag' && tagId) {
       if (!n.tagIds.includes(tagId)) await updateNote(n.id, { tagIds: [...n.tagIds, tagId] });
     } else if (type === 'removeTag' && tagId) {
       if (n.tagIds.includes(tagId)) await updateNote(n.id, { tagIds: n.tagIds.filter((t) => t !== tagId) });
+    } else if (type === 'moveFolder') {
+      await updateNote(n.id, { folderId: folderId || null });
     } else if (type === 'pin') {
       await updateNote(n.id, { pinned: true });
     } else if (type === 'unpin') {

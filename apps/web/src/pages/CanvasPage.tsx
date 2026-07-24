@@ -173,43 +173,45 @@ export function CanvasPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-        <button onClick={() => navigate('/canvas')} className="shrink-0 text-[var(--text-soft)] hover:text-[var(--text)]" title="Retour">
-          <IconArrowLeft size={18} />
-        </button>
-        <input
-          value={canvas?.name ?? ''}
-          onChange={(e) => setCanvas((c) => (c ? { ...c, name: e.target.value } : c))}
-          onBlur={() => canvas && void saveCanvas(canvas)}
-          className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none"
-        />
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+      <div className="border-b border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate('/canvas')} className="shrink-0 text-[var(--text-soft)] hover:text-[var(--text)]" title="Retour">
+            <IconArrowLeft size={18} />
+          </button>
+          <input
+            value={canvas?.name ?? ''}
+            onChange={(e) => setCanvas((c) => (c ? { ...c, name: e.target.value } : c))}
+            onBlur={() => canvas && void saveCanvas(canvas)}
+            className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none"
+          />
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="shrink-0 rounded-lg p-1.5 text-[var(--text-soft)] hover:bg-red-500/10 hover:text-red-500"
+            title="Supprimer le canvas"
+          >
+            <IconTrash size={16} />
+          </button>
+        </div>
+        <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none]">
           {KINDS.map((k) => (
             <button
               key={k.kind}
               onClick={() => addNode(k.kind)}
-              className="flex items-center gap-1 rounded-lg border border-[var(--border)] px-2 py-1 text-xs hover:bg-black/5 dark:hover:bg-white/5"
+              className="flex shrink-0 items-center gap-1 rounded-lg border border-[var(--border)] px-2 py-1 text-xs hover:bg-black/5 dark:hover:bg-white/5"
             >
               <IconPlus size={13} /> {k.label}
             </button>
           ))}
-          <button onClick={openPicker} className="rounded-lg border border-[var(--border)] px-2 py-1 text-xs hover:bg-black/5 dark:hover:bg-white/5">
+          <button onClick={openPicker} className="shrink-0 rounded-lg border border-[var(--border)] px-2 py-1 text-xs hover:bg-black/5 dark:hover:bg-white/5">
             Depuis une note
           </button>
           <button
             onClick={run}
             disabled={running}
-            className="flex items-center gap-1 rounded-lg bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+            className="flex shrink-0 items-center gap-1 rounded-lg bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
             title="Exécuter le workflow"
           >
             <IconPlay size={12} /> Exécuter
-          </button>
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="rounded-lg p-1.5 text-[var(--text-soft)] hover:bg-red-500/10 hover:text-red-500"
-            title="Supprimer le canvas"
-          >
-            <IconTrash size={16} />
           </button>
         </div>
       </div>
@@ -220,7 +222,7 @@ export function CanvasPage() {
         </div>
       )}
 
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1 touch-none">
         <ReactFlow
           nodes={nodes}
           edges={edges}

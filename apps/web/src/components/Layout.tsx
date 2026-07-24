@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect } from 'react';
 import { Logo } from './Logo';
+import { FolderTree } from './FolderTree';
 import { db, createNote } from '../db/db';
 import { useUI } from '../store/useUI';
 import { cx } from '../lib/config';
@@ -28,6 +29,7 @@ export function Layout() {
   const {
     activeTagId,
     setActiveTag,
+    setActiveFolder,
     toggleTheme,
     theme,
     setPaletteOpen,
@@ -35,6 +37,11 @@ export function Layout() {
     sidebarOpen,
     toggleSidebar,
   } = useUI();
+
+  const selectTag = (id: string | null) => {
+    setActiveTag(id);
+    setActiveFolder(null);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -111,32 +118,36 @@ export function Layout() {
           </NavLink>
         </nav>
 
-        <div className="mt-5 px-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-soft)]">
-          Tags
-        </div>
-        <div className="mt-1 flex flex-col gap-0.5 overflow-y-auto">
-          <button
-            onClick={() => setActiveTag(null)}
-            className={cx(
-              'flex items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm transition-colors',
-              !activeTagId ? 'bg-black/5 dark:bg-white/5' : 'hover:bg-black/5 dark:hover:bg-white/5',
-            )}
-          >
-            Tous
-          </button>
-          {tags.map((tag) => (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <FolderTree />
+
+          <div className="mt-4 px-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-soft)]">
+            Tags
+          </div>
+          <div className="mt-1 flex flex-col gap-0.5">
             <button
-              key={tag.id}
-              onClick={() => setActiveTag(tag.id)}
+              onClick={() => selectTag(null)}
               className={cx(
                 'flex items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm transition-colors',
-                activeTagId === tag.id ? 'bg-black/5 dark:bg-white/5' : 'hover:bg-black/5 dark:hover:bg-white/5',
+                !activeTagId ? 'bg-black/5 dark:bg-white/5' : 'hover:bg-black/5 dark:hover:bg-white/5',
               )}
             >
-              <TagDot color={tag.color} />
-              <span className="truncate">{tag.name}</span>
+              Tous
             </button>
-          ))}
+            {tags.map((tag) => (
+              <button
+                key={tag.id}
+                onClick={() => selectTag(tag.id)}
+                className={cx(
+                  'flex items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm transition-colors',
+                  activeTagId === tag.id ? 'bg-black/5 dark:bg-white/5' : 'hover:bg-black/5 dark:hover:bg-white/5',
+                )}
+              >
+                <TagDot color={tag.color} />
+                <span className="truncate">{tag.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <button

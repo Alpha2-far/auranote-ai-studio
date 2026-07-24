@@ -91,7 +91,7 @@ app.get('/mcp', (_req, res) =>
 );
 
 // --- Synchronisation multi-appareils (serveur = hub, last-write-wins) ---
-const COLLECTIONS: Collection[] = ['notes', 'tags', 'canvases'];
+const COLLECTIONS: Collection[] = ['notes', 'tags', 'canvases', 'folders'];
 
 // Le client envoie ses entités modifiées → fusion LWW dans le store du volume.
 app.post('/api/v1/sync/push', requireAuth, async (req, res) => {

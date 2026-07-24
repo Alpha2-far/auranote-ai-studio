@@ -15,10 +15,10 @@ export interface SyncEntity {
   [key: string]: unknown;
 }
 
-export type Collection = 'notes' | 'tags' | 'canvases';
+export type Collection = 'notes' | 'tags' | 'canvases' | 'folders';
 type Store = Record<Collection, Record<string, SyncEntity>>;
 
-const EMPTY: Store = { notes: {}, tags: {}, canvases: {} };
+const EMPTY: Store = { notes: {}, tags: {}, canvases: {}, folders: {} };
 
 let cache: Store | null = null;
 let writeChain: Promise<void> = Promise.resolve();
@@ -27,7 +27,12 @@ async function load(): Promise<Store> {
   if (cache) return cache;
   try {
     const parsed = JSON.parse(await readFile(FILE, 'utf8')) as Partial<Store>;
-    cache = { notes: parsed.notes ?? {}, tags: parsed.tags ?? {}, canvases: parsed.canvases ?? {} };
+    cache = {
+      notes: parsed.notes ?? {},
+      tags: parsed.tags ?? {},
+      canvases: parsed.canvases ?? {},
+      folders: parsed.folders ?? {},
+    };
   } catch {
     cache = structuredClone(EMPTY);
   }
@@ -65,7 +70,12 @@ export async function changedSince(since: string | undefined): Promise<Record<Co
   const t = since ? Date.parse(since) : 0;
   const pick = (bucket: Record<string, SyncEntity>) =>
     Object.values(bucket).filter((e) => Date.parse(e.updatedAt) > t);
-  return { notes: pick(store.notes), tags: pick(store.tags), canvases: pick(store.canvases) };
+  return {
+    notes: pick(store.notes),
+    tags: pick(store.tags),
+    canvases: pick(store.canvases),
+    folders: pick(store.folders),
+  };
 }
 
 /** Insère/écrase une entité dans une collection. */
@@ -102,6 +112,20 @@ export async function findOrCreateTag(name: string, color: string): Promise<stri
   if (existing) return existing.id;
   const id = randomUUID();
   store.tags[id] = { id, name: clean, color, updatedAt: new Date().toISOString(), deletedAt: null };
+  await flush();
+  return id;
+}
+
+/** Trouve (par nom) ou crée un dossier ; renvoie son id. */
+export async function findOrCreateFolder(name: string): Promise<string> {
+  const store = await load();
+  const clean = name.trim();
+  const existing = Object.values(store.folders).find(
+    (f) => !f.deletedAt && String(f.name).toLowerCase() === clean.toLowerCase(),
+  );
+  if (existing) return existing.id;
+  const id = randomUUID();
+  store.folders[id] = { id, name: clean, parentId: null, updatedAt: new Date().toISOString(), deletedAt: null };
   await flush();
   return id;
 }

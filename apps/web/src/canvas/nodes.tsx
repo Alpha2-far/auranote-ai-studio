@@ -136,12 +136,18 @@ export function IfNode({ id, data, selected }: NodeProps<AuraNode>) {
   );
 }
 
+function useFolders() {
+  return useLiveQuery(() => db.folders.filter((f) => !f.deletedAt).toArray(), [], []);
+}
+
 export function ActionNode({ id, data, selected }: NodeProps<AuraNode>) {
   const setConfig = useSetConfig(id);
   const tags = useTags();
+  const folders = useFolders();
   const cfg = data.config ?? {};
   const type = (cfg.type as string) ?? 'addTag';
   const needsTag = type === 'addTag' || type === 'removeTag';
+  const needsFolder = type === 'moveFolder';
   return (
     <div className={`w-48 rounded-lg border-2 px-3 py-2 shadow-sm ${selected ? 'ring-2 ring-blue-500/30' : ''} border-blue-500/60 bg-blue-500/10`}>
       <Handle type="target" position={Position.Left} className="!size-2.5 !border-0 !bg-blue-500" />
@@ -154,6 +160,7 @@ export function ActionNode({ id, data, selected }: NodeProps<AuraNode>) {
         <option value="unpin">Désépingler</option>
         <option value="favorite">Mettre en favori</option>
         <option value="unfavorite">Retirer des favoris</option>
+        <option value="moveFolder">Déplacer vers un dossier</option>
         <option value="recap">Créer une note récap</option>
       </select>
       {needsTag && (
@@ -161,6 +168,14 @@ export function ActionNode({ id, data, selected }: NodeProps<AuraNode>) {
           <option value="">— tag —</option>
           {tags.map((t) => (
             <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+      )}
+      {needsFolder && (
+        <select className={selectCls} value={(cfg.folderId as string) ?? ''} onChange={(e) => setConfig({ folderId: e.target.value })}>
+          <option value="">— dossier —</option>
+          {folders.map((f) => (
+            <option key={f.id} value={f.id}>{f.name}</option>
           ))}
         </select>
       )}

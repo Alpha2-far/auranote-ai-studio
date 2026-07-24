@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { parseRawText } from '@auranote/core';
-import { upsertNote, findOrCreateTag } from './syncStore';
+import { upsertNote, findOrCreateTag, findOrCreateFolder } from './syncStore';
 
 export interface IngestInput {
   content: string;
   title?: string;
   tags?: string[];
+  folder?: string;
   source?: string;
 }
 
@@ -32,6 +33,11 @@ export async function ingestCapture(input: IngestInput): Promise<{ id: string; t
     }
   }
 
+  const folderId =
+    typeof input.folder === 'string' && input.folder.trim()
+      ? await findOrCreateFolder(input.folder)
+      : null;
+
   const now = new Date().toISOString();
   const id = randomUUID();
   await upsertNote({
@@ -40,6 +46,7 @@ export async function ingestCapture(input: IngestInput): Promise<{ id: string; t
     contentMarkdown: parsed.contentMarkdown,
     sections: parsed.sections,
     tagIds,
+    folderId,
     pinned: false,
     favorite: false,
     source: input.source ?? 'ingest',
